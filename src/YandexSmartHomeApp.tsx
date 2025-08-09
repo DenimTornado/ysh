@@ -10,7 +10,7 @@ import 'bulma/css/bulma.min.css';
 
 import './YandexSmartHomeApp.css';
 
-const CLIENT_ID = '5ed1511c7dc34170897c9bf024cd4bb1';
+const CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID;
 const REDIRECT_URI = window.location.href;
 const SCOPE = 'iot:view iot:control';
 

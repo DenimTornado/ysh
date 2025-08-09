@@ -1,6 +1,6 @@
 // SmartHomeApi.ts
 
-const API_URL = 'https://functions.yandexcloud.net/d4eja6sthgsr6jbjrifg';
+const API_URL = import.meta.env.VITE_API_URL;
 const TOKEN_KEY = 'yandex_smart_home_token';
 
 export const sendAction = async (
