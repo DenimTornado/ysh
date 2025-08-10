@@ -1,4 +1,5 @@
 import React from 'react';
+import { CardLayout } from './card-layout/card-layout';
 
 type Property = {
     type: string;
@@ -20,28 +21,32 @@ type Props = {
     room?: string;
 };
 
+const dataMap = {
+    battery_level: 'Заряд',
+    temperature: 'Температура',
+    humidity: 'Влажность',
+    pressure: 'Давление'
+}
+
 const DatchikKlimataComponent: React.FC<Props> = ({ device, room }) => {
     return (
-        <div>
-            <h3>{device.name}</h3>
-            <p><strong>ID:</strong> {device.id}</p>
-            <p><strong>Комната:</strong> {room}</p>
-
-            {device.properties && device.properties.length > 0 && (
-                <div>
-                    <h4>Показания:</h4>
-                    <ul>
-                        {device.properties.map((prop, index) => (
-                            prop.state?.value !== undefined && (
-                                <li key={index}>
-                                    {prop.parameters.instance}: {prop.state.value}
-                                </li>
-                            )
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
+        <CardLayout
+            device={ device }
+            room={ room }
+        >
+            <CardLayout.Actions>
+                <h4>Показания:</h4>
+                <ul>
+                    { device.properties.map((prop, index) => (
+                        prop.state?.value !== undefined && (
+                            <li key={ index }>
+                                { dataMap[prop.parameters.instance] }: { prop.state.value.toFixed(2) }
+                            </li>
+                        )
+                    )) }
+                </ul>
+            </CardLayout.Actions>
+        </CardLayout>
     );
 };
 

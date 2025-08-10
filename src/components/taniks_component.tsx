@@ -1,4 +1,6 @@
 import React from 'react';
+import { sendAction } from '../api';
+import { CardLayout } from './card-layout/card-layout';
 
 type Property = {
     type: string;
@@ -37,31 +39,35 @@ const TaniksComponent: React.FC<Props> = ({ device, room }) => {
                                     type: 'devices.capabilities.custom.button',
                                     state: {
                                         instance: '1000000',
-                                        value: true,
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                },
-            }),
+                                        value: true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            })
         })
-            .then((res) => res.text())
-            .then(console.log)
-            .catch(console.error);
+        .then((res) => res.text())
+        .then(console.log)
+        .catch(console.error);
     };
 
-    return (
-        <div>
-            <h3>{device.name}</h3>
-            <p><strong>ID:</strong> {device.id}</p>
-            <p><strong>Комната:</strong> {room}</p>
+    const setPause = () => {
+        sendAction('1000000', true, 'devices.capabilities.custom.button', device);
+    }
 
-            <div className={'buttons are-small'}>
+    return (
+        <CardLayout
+            device={ device }
+            room={ room }
+        >
+            <CardLayout.Actions>
                 <h4>IR Команды:</h4>
-                <button className={'button'} onClick={sendPause}>Пауза</button>
-            </div>
-        </div>
+                <button className={ 'button' } onClick={ setPause }>Пауза</button>
+                <button className={ 'button' } onClick={ sendPause }>Пауза</button>
+            </CardLayout.Actions>
+        </CardLayout>
     );
 };
 
