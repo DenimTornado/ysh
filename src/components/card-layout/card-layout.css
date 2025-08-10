@@ -1,5 +1,9 @@
 .card-layout {
     &__root {
+        display: flex;
+        flex-direction: column;
+        align-content: space-around;
+
         & > div {
             margin-bottom: 10px;
         }
@@ -8,7 +12,7 @@
     &__header {
         font-size: 24px;
         font-weight: bold;
-
+        color: #555d66;
     }
 
     &__content {

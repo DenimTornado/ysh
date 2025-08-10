@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import switchOffIcon from '../assets/icons/poweroff.png';
 import switchOnIcon from '../assets/icons/poweron.png';
-import Button from './button/button';
-import { sendAction } from '../api';
-import { CardLayout } from './card-layout/card-layout';
 import { createCn } from 'bem-react-classname';
+import { sendAction } from '../../api';
+import { CardLayout } from '../card-layout/card-layout';
+import Button from '../button/button';
 
-const cn = createCn('custom-input');
+import 'base-card.css';
+
+const cn = createCn('base-card');
 
 type Property = {
     type: string;
@@ -38,7 +40,7 @@ type Props = {
     room?: string;
 };
 
-const LampaComponent: React.FC<Props> = ({ device, room }) => {
+const BaseCard: React.FC<Props> = ({ device, room }) => {
     const getInitialState = (): number => {
         const tempCap = device.capabilities?.find(
             (c) => {
@@ -67,7 +69,7 @@ const LampaComponent: React.FC<Props> = ({ device, room }) => {
         >
             <CardLayout.Actions>
                 <h4>Управление температурой:</h4>
-                <div className={'buttons'}>
+                <div className={ cn('buttons') }>
                     <Button alt={ 'Mute' } onClick={ setStatus } icon={ powered ? switchOffIcon : switchOnIcon }/>
                 </div>
             </CardLayout.Actions>
@@ -75,4 +77,4 @@ const LampaComponent: React.FC<Props> = ({ device, room }) => {
     );
 };
 
-export default LampaComponent;
+export default BaseCard;

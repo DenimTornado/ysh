@@ -13,8 +13,7 @@ import './YandexSmartHomeApp.css';
 import LampaComponent from './components/lampa_component';
 import { CardLayout } from './components/card-layout/card-layout';
 import Button from './components/button/button';
-import switchOffIcon from './assets/icons/poweroff.png';
-import switchOnIcon from './assets/icons/poweron.png';
+import startIcon from './assets/icons/start.png';
 
 const CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID;
 const REDIRECT_URI = window.location.href;
@@ -137,7 +136,6 @@ export default function YandexSmartHomeApp() {
     return (
         <div className={ cn() }>
             <div className="device-grid">
-
                 { visibleDevices.map((device) => {
                     const room = getRoomName(rooms, device.room);
                     switch (device.id) {
@@ -174,7 +172,9 @@ export default function YandexSmartHomeApp() {
                             room={ '' }
                         >
                             <CardLayout.Actions>
-                                <button className={'button'} onClick={ () => {callScenario(s.id)} }>Вызвать { s.name }</button>
+                                <div className={'buttons'}>
+                                    <Button alt={ 'Mute' } onClick={ () => {callScenario(s.id)} } icon={ startIcon }/>
+                                </div>
                             </CardLayout.Actions>
                         </CardLayout>
                     ))
