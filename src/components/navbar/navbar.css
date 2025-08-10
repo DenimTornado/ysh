@@ -1,0 +1,44 @@
+.navbar {
+    margin-bottom: 20px;
+
+    img {
+        width: 48px;
+        height: 48px;
+        margin-right: 20px;
+    }
+
+    &__brand {
+        @media screen and (max-width: 430px) {
+            gap: 10px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+    }
+
+
+    &__content {
+        gap: 20px;
+        display: flex;
+        align-items: center;
+
+        @media screen and (max-width: 430px) {
+            gap: 10px;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    &__logout {
+        @media screen and (max-width: 430px) {
+            display: none;
+        }
+    }
+
+    &__mobile-logout {
+        @media screen and (max-width: 430px) {
+            display: block;
+        }
+    }
+}

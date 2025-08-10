@@ -14,13 +14,14 @@ import LampaComponent from './components/lampa_component';
 import { CardLayout } from './components/card-layout/card-layout';
 import Button from './components/button/button';
 import startIcon from './assets/icons/start.png';
+import { Navbar } from './components/navbar/navbar';
 
 const CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID;
 const REDIRECT_URI = window.location.href;
 const SCOPE = 'iot:view iot:control';
 
 const devicesMap = {
-    'datchikKlimata': { id: '0f3ed5ec-9765-48dc-a2db-96c40de94455', enabled: true, weight: 1 },
+    'datchikKlimata': { id: '0f3ed5ec-9765-48dc-a2db-96c40de94455', enabled: false, weight: 1 },
     'tvPristavka': { id: '2a02257c-86a5-4f4a-8772-2c3de32e4e11', enabled: true, weight: 3 },
     'lampa': { id: '5d97750c-b5b2-432e-b27c-921d9677c5ae', enabled: true, weight: 6 },
     'pravyiVyklyuchatel': { id: '7679e9ac-eb79-4d87-9ac5-ec5e56b5e778', enabled: false, weight: 0 },
@@ -116,7 +117,7 @@ export default function YandexSmartHomeApp() {
         const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${ CLIENT_ID }&redirect_uri=${ REDIRECT_URI }&scope=${ encodeURIComponent(
             SCOPE) }`;
         return (
-            <div>
+            <div className={ cn() }>
                 <h2>Авторизация в Яндексе</h2>
                 <a href={ authUrl }>Войти через Яндекс</a>
             </div>
@@ -133,8 +134,14 @@ export default function YandexSmartHomeApp() {
     .map(([key, meta]) => devices.find((d) => d.id === meta.id))
     .filter((d): d is Device => !!d);
 
+    const klimatDataDevice = devices.find((device) => { return device.id === devicesMap.datchikKlimata.id});
+
     return (
         <div className={ cn() }>
+            {klimatDataDevice &&
+                <Navbar device={klimatDataDevice} />
+            }
+
             <div className="device-grid">
                 { visibleDevices.map((device) => {
                     const room = getRoomName(rooms, device.room);
