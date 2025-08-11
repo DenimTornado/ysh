@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { CardLayout } from './card-layout/card-layout';
 import Button from './button/button';
 import plusIcon from '../assets/icons/plus.png';
@@ -7,6 +7,8 @@ import { sendAction } from '../api';
 import muteIcon from '../assets/icons/mute.png';
 import pauseIcon from '../assets/icons/pause.png';
 import CustomInput from './custom-input/custom-input';
+import switchOffIcon from '../assets/icons/poweroff.png';
+import switchOnIcon from '../assets/icons/poweron.png';
 
 type Property = {
     type: string;
@@ -17,10 +19,20 @@ type Property = {
     };
 };
 
+type Capability = {
+    type: string;
+    parameters: { split: any, instance: string };
+    state?: {
+        instance: string;
+        value: any;
+    };
+};
+
 type Device = {
     id: string;
     name: string;
     properties?: Property[];
+    capabilities?: Capability[];
 };
 
 type Props = {
@@ -30,6 +42,22 @@ type Props = {
 
 const TvPristavkaComponent: React.FC<Props> = ({ device, room }) => {
     const [volume, setVolume] = useState<number>(50);
+
+    const getInitialState = (): number => {
+        const tempCap = device.capabilities?.find(
+            (c) => {
+                return c.parameters.split
+            }
+        );
+        return tempCap;
+    };
+
+    const [powered, setPowered] = useState<boolean>(getInitialState);
+
+    const setStatus = useCallback(() => {
+        sendAction('on', !powered, 'devices.capabilities.on_off', device);
+        setPowered((prev) => !prev);
+    }, [powered]);
 
     return (
         <CardLayout
@@ -52,6 +80,7 @@ const TvPristavkaComponent: React.FC<Props> = ({ device, room }) => {
                     <Button alt={ 'Mute' }
                             onClick={ () => sendAction('pause', true, 'devices.capabilities.toggle', device) }
                             icon={ pauseIcon }/>
+                    <Button alt={ 'Mute' } onClick={ setStatus } icon={ powered ? switchOffIcon : switchOnIcon }/>
                 </div>
 
                 <CustomInput

@@ -113,3 +113,29 @@ export const runScenario = async (scenarioId: string): Promise<void> => {
         console.error('runScenario error:', error);
     }
 };
+
+export const sendIrAction = async (): Promise<void> => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        console.error('No auth token found');
+        return;
+    }
+
+    try {
+        await fetch('https://iot.quasar.yandex.ru/m/user/devices/d679f0a0-556d-4187-82bb-96f06707c276/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'actions': [
+                    {
+                        'type': 'devices.capabilities.custom.button',
+                        'state': { 'instance': '1000001', 'value': true }
+                    }
+                ]
+            })
+        });
+    }
+    catch (error) {
+        console.error('sendAction error:', error);
+    }
+};
