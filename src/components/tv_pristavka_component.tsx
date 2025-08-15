@@ -69,11 +69,11 @@ const TvPristavkaComponent: React.FC<Props> = ({ device, room }) => {
 
                 <div className="buttons">
                     <Button alt={ 'Mute' }
-                            onClick={ () => sendAction('volume', volume + 5, 'devices.capabilities.range', device) }
-                            icon={ plusIcon }/>
-                    <Button alt={ 'Mute' }
                             onClick={ () => sendAction('volume', volume - 5, 'devices.capabilities.range', device) }
                             icon={ minusIcon }/>
+                    <Button alt={ 'Mute' }
+                            onClick={ () => sendAction('volume', volume + 5, 'devices.capabilities.range', device) }
+                            icon={ plusIcon }/>
                     <Button alt={ 'Mute' }
                             onClick={ () => sendAction('mute', true, 'devices.capabilities.toggle', device) }
                             icon={ muteIcon }/>

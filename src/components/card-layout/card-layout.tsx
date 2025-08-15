@@ -5,6 +5,7 @@ import './card-layout.css';
 interface Device {
     id: string;
     name: string;
+    aliases: string[]
 }
 
 interface CardLayoutRootProps {
@@ -16,9 +17,10 @@ interface CardLayoutRootProps {
 const cn = createCn('card-layout');
 
 const CardLayoutRoot: React.FC<CardLayoutRootProps> = ({ device, room, children }) => {
+    const name = device?.aliases?.length > 0 ? device.aliases[0] : device.name;
     return (
         <div className={ cn('root') }>
-            <CardLayout.Header>{ device.name }</CardLayout.Header>
+            <CardLayout.Header>{ name }</CardLayout.Header>
             <CardLayout.Content>
                 { room && <div>Комната: <span className={cn('room')}>{ room }</span></div> }
             </CardLayout.Content>

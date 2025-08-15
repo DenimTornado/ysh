@@ -31,7 +31,7 @@ const devicesMap = {
     'konditsioner': { id: 'd1e02587-9d72-4b11-9518-c69799732a72', enabled: true, weight: 5 },
     'taniks': { id: 'd679f0a0-556d-4187-82bb-96f06707c276', enabled: false, weight: 4 },
     'stantsiyaMini3': { id: 'ff9370f7-daca-4951-b477-b45ab10aa8b5', enabled: false, weight: 0 },
-    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: false, weight: 0 }
+    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 10 }
 };
 
 const getRoomName = (rooms: Room[], roomId?: string): string => {
@@ -113,6 +113,45 @@ export default function YandexSmartHomeApp() {
         });
     }, [token]);
 
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval>;
+
+        const fetchData = () => {
+            getUserInfo().then((data) => {
+                if (!data) {
+                    return;
+                }
+                if (Array.isArray(data.devices)) {
+                    setDevices(data.devices);
+                }
+                if (Array.isArray(data.rooms)) {
+                    setRooms(data.rooms);
+                }
+                if (Array.isArray(data.scenarios)) {
+                    setScenarios(data.scenarios);
+                }
+            });
+        };
+
+        // Периодическое обновление (в фоне Chrome будет замедлять)
+        // eslint-disable-next-line prefer-const
+        intervalId = setInterval(fetchData, 600000);
+
+        // Моментальный запрос при возврате фокуса
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                fetchData();
+            }
+        };
+
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        return () => {
+            clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
+    }, []);
+
     if (!token) {
         const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${ CLIENT_ID }&redirect_uri=${ REDIRECT_URI }&scope=${ encodeURIComponent(
             SCOPE) }`;
@@ -159,6 +198,9 @@ export default function YandexSmartHomeApp() {
                             return <div key={ device.id }><DatchikKlimataComponent device={ device } room={ room }/>
                             </div>;
                         case devicesMap.lampa.id:
+                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
+                            </div>;
+                        case devicesMap.pereklyuchatel.id:
                             return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
                             </div>;
                         default:

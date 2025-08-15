@@ -84,8 +84,8 @@ const TelevizorComponent: React.FC<Props> = ({ device, room }) => {
             <CardLayout.Actions>
                 <h4>Управление звуком:</h4>
                 <div className="buttons">
-                    <Button alt={ 'Mute' } onClick={ () => handleVolumeChange(+5) } icon={ plusIcon }/>
                     <Button alt={ 'Mute' } onClick={ () => handleVolumeChange(-5) } icon={ minusIcon }/>
+                    <Button alt={ 'Mute' } onClick={ () => handleVolumeChange(+5) } icon={ plusIcon }/>
                     <Button alt={ 'Mute' }
                             onClick={ () => sendAction('mute', true, 'devices.capabilities.toggle', device) }
                             icon={ muteIcon }/>

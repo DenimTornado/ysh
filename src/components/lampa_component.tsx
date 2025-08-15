@@ -66,7 +66,6 @@ const LampaComponent: React.FC<Props> = ({ device, room }) => {
             room={ room }
         >
             <CardLayout.Actions>
-                <h4>Управление температурой:</h4>
                 <div className={'buttons'}>
                     <Button alt={ 'Mute' } onClick={ setStatus } icon={ powered ? switchOffIcon : switchOnIcon }/>
                 </div>

@@ -83,8 +83,8 @@ const KonditsionerComponent: React.FC<Props> = ({ device, room }) => {
             <CardLayout.Actions>
                 <h4>Управление температурой:</h4>
                 <div className="buttons">
-                    <Button alt={ 'Mute' } onClick={ () => {setTemperatureByOne('up')} } icon={ plusIcon }/>
                     <Button alt={ 'Mute' } onClick={ () => {setTemperatureByOne('down')}  } icon={ minusIcon }/>
+                    <Button alt={ 'Mute' } onClick={ () => {setTemperatureByOne('up')} } icon={ plusIcon }/>
                     <Button alt={ 'Mute' } onClick={ setStatus } icon={ powered ? switchOffIcon : switchOnIcon }/>
                 </div>
 
