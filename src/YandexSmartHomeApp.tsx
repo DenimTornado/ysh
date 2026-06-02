@@ -31,7 +31,9 @@ const devicesMap = {
     'konditsioner': { id: 'd1e02587-9d72-4b11-9518-c69799732a72', enabled: true, weight: 5 },
     'taniks': { id: 'd679f0a0-556d-4187-82bb-96f06707c276', enabled: false, weight: 4 },
     'stantsiyaMini3': { id: 'ff9370f7-daca-4951-b477-b45ab10aa8b5', enabled: false, weight: 0 },
-    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 10 }
+    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 10 },
+    'hvs': { id: '2408c45d-0099-45e0-9206-9a2f99aa9968', enabled: true, weight: 10 },
+    'gvs': { id: 'd36c540a-fe8b-4fba-a9c4-2c8543a56057', enabled: true, weight: 10 }
 };
 
 const getRoomName = (rooms: Room[], roomId?: string): string => {
@@ -175,6 +177,10 @@ export default function YandexSmartHomeApp() {
 
     const klimatDataDevice = devices.find((device) => { return device.id === devicesMap.datchikKlimata.id});
 
+    const dataMap = {
+        water_meter: { value: 'Объем', units: 'м3' },
+    }
+
     return (
         <div className={ cn() }>
             {klimatDataDevice &&
@@ -202,6 +208,28 @@ export default function YandexSmartHomeApp() {
                             </div>;
                         case devicesMap.pereklyuchatel.id:
                             return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
+                            </div>;
+                        case devicesMap.hvs.id:
+                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
+                                { device.properties && device.properties.map((prop, index) => (
+                                    prop.state?.value !== undefined && (
+                                        <div key={ index }>
+                                            { dataMap[prop.parameters.instance].value }: { prop.state.value.toFixed(
+                                            2) }{ dataMap[prop.parameters.instance].units }
+                                        </div>
+                                    )
+                                )) }
+                            </div>;
+                        case devicesMap.gvs.id:
+                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
+                                { device.properties && device.properties.map((prop, index) => (
+                                    prop.state?.value !== undefined && (
+                                        <div key={ index }>
+                                            { dataMap[prop.parameters.instance].value }: { prop.state.value.toFixed(
+                                            2) }{ dataMap[prop.parameters.instance].units }
+                                        </div>
+                                    )
+                                )) }
                             </div>;
                         default:
                             return (
