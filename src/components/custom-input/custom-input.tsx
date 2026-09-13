@@ -22,10 +22,11 @@ const CustomInput: React.FC<Props> = ({ value, onChange, onClick }) => {
             <div className={cn('input')}>
                 <div className={cn('field')}>
                     <input
-                        className={ 'input mb-2' }
+                        className={ 'input mb-2 is-medium' }
                         type="number"
                         value={ value }
                         onChange={ onChange }
+                        style={ { width: '100px' } }
                     />
                 </div>
                 <div className={cn('icon')}>

@@ -11,6 +11,7 @@ import 'bulma/css/bulma.min.css';
 
 import './YandexSmartHomeApp.css';
 import LampaComponent from './components/lampa_component';
+import LentaComponent from './components/lenta_component';
 import { CardLayout } from './components/card-layout/card-layout';
 import Button from './components/button/button';
 import startIcon from './assets/icons/start.png';
@@ -22,18 +23,19 @@ const SCOPE = 'iot:view iot:control';
 
 const devicesMap = {
     'datchikKlimata': { id: '0f3ed5ec-9765-48dc-a2db-96c40de94455', enabled: false, weight: 1 },
-    'tvPristavka': { id: '2a02257c-86a5-4f4a-8772-2c3de32e4e11', enabled: true, weight: 3 },
-    'lampa': { id: '5d97750c-b5b2-432e-b27c-921d9677c5ae', enabled: true, weight: 6 },
+    'tvPristavka': { id: '2a02257c-86a5-4f4a-8772-2c3de32e4e11', enabled: true, weight: 4 },
+    'lampa': { id: '5d97750c-b5b2-432e-b27c-921d9677c5ae', enabled: false, weight: 6 },
+    'lenta': { id: '8ccb68e1-4ddb-470a-9ccd-7d91685a4946', enabled: true, weight: 1 },
     'pravyiVyklyuchatel': { id: '7679e9ac-eb79-4d87-9ac5-ec5e56b5e778', enabled: false, weight: 0 },
     'levyiVyklyuchatel': { id: '8166152c-f343-4796-9e77-f8b937598939', enabled: false, weight: 0 },
     'khab': { id: 'ac7a7525-5a0f-411b-a1ad-0f07b17b88d4', enabled: false, weight: 0 },
-    'televizor': { id: 'b363271e-4ff4-40fc-8dfb-32f9fecf572f', enabled: true, weight: 2 },
-    'konditsioner': { id: 'd1e02587-9d72-4b11-9518-c69799732a72', enabled: true, weight: 5 },
+    'televizor': { id: 'b363271e-4ff4-40fc-8dfb-32f9fecf572f', enabled: false, weight: 2 },
+    'konditsioner': { id: 'd1e02587-9d72-4b11-9518-c69799732a72', enabled: true, weight: 2 },
     'taniks': { id: 'd679f0a0-556d-4187-82bb-96f06707c276', enabled: false, weight: 4 },
     'stantsiyaMini3': { id: 'ff9370f7-daca-4951-b477-b45ab10aa8b5', enabled: false, weight: 0 },
-    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 10 },
-    'hvs': { id: '2408c45d-0099-45e0-9206-9a2f99aa9968', enabled: true, weight: 10 },
-    'gvs': { id: 'd36c540a-fe8b-4fba-a9c4-2c8543a56057', enabled: true, weight: 10 }
+    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 3 },
+    'hvs': { id: '2408c45d-0099-45e0-9206-9a2f99aa9968', enabled: false, weight: 10 },
+    'gvs': { id: 'd36c540a-fe8b-4fba-a9c4-2c8543a56057', enabled: false, weight: 10 }
 };
 
 const getRoomName = (rooms: Room[], roomId?: string): string => {
@@ -205,6 +207,9 @@ export default function YandexSmartHomeApp() {
                             </div>;
                         case devicesMap.lampa.id:
                             return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
+                            </div>;
+                        case devicesMap.lenta.id:
+                            return <div key={ device.id }><LentaComponent device={ device } room={ room }/>
                             </div>;
                         case devicesMap.pereklyuchatel.id:
                             return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
