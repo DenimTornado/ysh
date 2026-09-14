@@ -4,8 +4,8 @@ import './custom-input.css';
 type Props = {
     label: string;
     value?: number;
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
     step?: number;
     disabled?: boolean;
     onApply: (value: number) => Promise<boolean>;

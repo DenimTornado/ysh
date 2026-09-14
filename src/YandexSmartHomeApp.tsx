@@ -1,130 +1,117 @@
 import { useEffect, useState } from 'react';
 import 'bulma/css/bulma.min.css';
 import './YandexSmartHomeApp.css';
-import { runScenario, TOKEN_KEY } from './api';
-import type { Device } from './model';
-import { deviceName } from './model';
-import { climateSensorId, deviceConfig, hallLightGroupId, hallLightIds, mergeLayout, waterGroupId, waterMeterIds } from './device-config';
-import type { Layout } from './device-config';
-import HallLight from './components/hall-light';
+import { TOKEN_KEY } from './api';
+import { capability, deviceAliases, deviceName } from './model';
+import { dashboardEntries, defaultVisible, readings } from './dashboard-model';
 import { CommandContext } from './hooks/use-command';
 import { useHome } from './hooks/use-home';
+import { usePreferences } from './hooks/use-preferences';
 import { Navbar } from './components/navbar/navbar';
-import LentaComponent from './components/lenta_component';
-import KonditsionerComponent from './components/konditsioner_component';
-import TvPristavkaComponent from './components/tv_pristavka_component';
-import LampaComponent from './components/lampa_component';
-import WaterMeters from './components/water-meters';
-import { CardLayout } from './components/card-layout/card-layout';
-import { ModeControl, PowerControl } from './components/device-controls';
-
-const SETTINGS_KEY = 'yandex_smart_home_layout';
-function readLayout(): Layout {
-    try {
-        const parsed: unknown = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-        if (Array.isArray(parsed) && parsed.every((item) => typeof item?.id === 'string' && typeof item?.visible === 'boolean')) {
-            return mergeLayout(parsed as Layout);
-        }
-    } catch { /* Повреждённые или недоступные настройки не должны блокировать пульт. */ }
-    return deviceConfig;
-}
-
-function DeviceCard({ device, room }: { device: Device; room?: string }) {
-    if (device.type === 'devices.types.light.strip') return <LentaComponent device={device} room={room} />;
-    if (device.type === 'devices.types.thermostat.ac') return <KonditsionerComponent device={device} room={room} />;
-    if (device.type === 'devices.types.media_device.tv_box') return <TvPristavkaComponent device={device} room={room} />;
-    if (device.type === 'devices.types.humidifier') return <CardLayout device={device} room={room}>
-        <p className="muted">Сезонное устройство. Включайте после подключения.</p>
-        <PowerControl device={device} /><ModeControl device={device} instance="fan_speed" label="Интенсивность" />
-    </CardLayout>;
-    return <LampaComponent device={device} room={room} />;
-}
+import type { DashboardTab } from './components/navbar/navbar';
+import CapabilityControls from './components/capability-controls';
+import ReadingsPanel from './components/readings-panel';
+import ScenariosPanel from './components/scenarios-panel';
+import PowerGroup from './components/power-group';
 
 function HomeDashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
     const { home, busy, loading, error, updated, refresh, execute } = useHome(token);
-    const [savedLayout, setLayout] = useState(readLayout);
-    const layout = mergeLayout(savedLayout);
-    const [settingsError, setSettingsError] = useState('');
-    const saveLayout = (next: Layout) => {
-        setLayout(next);
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); setSettingsError(''); }
-        catch { setSettingsError('Настройки изменены только для этой вкладки: сохранение недоступно.'); }
-    };
-    const hallLights = home.devices.filter((device) => hallLightIds.includes(device.id));
-    const waterDevices = home.devices.filter((device) => waterMeterIds.includes(device.id));
-    const displayDevices: Device[] = [
-        ...home.devices.filter((device) => !hallLightIds.includes(device.id) && !waterMeterIds.includes(device.id)),
-        ...(waterDevices.length ? [{ id: waterGroupId, name: 'Показания воды', type: 'local.water_group' }] : []),
-        ...(hallLights.length ? [{ id: hallLightGroupId, name: 'Свет в зале', type: 'local.light_group' }] : []),
-    ];
-    const visibleDevices = layout.filter((item) => item.visible).flatMap((item) => {
-        const device = displayDevices.find((device) => device.id === item.id);
-        return device ? [device] : [];
-    });
-    const remotes = visibleDevices.filter((device) => device.type === 'devices.types.media_device.tv_box');
-    const pinnedIds = [waterGroupId, ...displayDevices.filter((device) => device.type === 'devices.types.media_device.tv_box').map((device) => device.id)];
-    const meters = visibleDevices.some((device) => device.id === waterGroupId) ? waterDevices : [];
-    const availableLayout = layout.filter((item) => displayDevices.some((device) => device.id === item.id));
-    const cardLayout = availableLayout.filter((item) => !pinnedIds.includes(item.id));
-    const settingsLayout = [...pinnedIds.flatMap((id) => availableLayout.filter((item) => item.id === id)), ...cardLayout];
-    const activeScenarios = home.scenarios.filter((scenario) => scenario.is_active !== false);
-    const inactiveScenarios = home.scenarios.filter((scenario) => scenario.is_active === false);
+    const { preferences, save, error: settingsError } = usePreferences();
+    const [groupName, setGroupName] = useState('');
+    const [groupMembers, setGroupMembers] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<DashboardTab>('devices');
+    const entries = dashboardEntries(home, preferences);
+    const visible = entries.filter((entry) => preferences.visibility[entry.id] ?? defaultVisible());
+    const roomName = (id?: string) => home.rooms.find((room) => room.id === id)?.name || 'Без комнаты';
     return <CommandContext.Provider value={{ busy, execute }}>
         <main className="mainApp">
-            <Navbar device={home.devices.find((device) => device.id === climateSensorId)} onLogout={onLogout}
-                onRefresh={() => void refresh()} loading={loading} busy={busy} />
+            <Navbar onLogout={onLogout} onRefresh={() => void refresh()} loading={loading} busy={busy}
+                deviceCount={home.devices.length} readingCount={readings(home).length} scenarioCount={home.scenarios.length}
+                activeTab={activeTab} onTab={setActiveTab} />
             {error && <p className="notification is-danger is-light" role="alert">{error}</p>}
-            {meters.length > 0 && <details className="water-details">
-                <summary>Показания воды</summary>
-                <WaterMeters devices={meters} />
-            </details>}
-            {remotes.map((device) => <TvPristavkaComponent key={device.id} device={device} />)}
-            <details className="layout-settings">
-                <summary>Настроить главный экран</summary>
-                <p className="muted">Видимость и порядок сохраняются в этом браузере. Увлажнитель можно вернуть на зиму.</p>
-                {settingsLayout.map((item) => {
-                    const device = displayDevices.find((device) => device.id === item.id);
-                    if (!device) return null;
-                    const index = cardLayout.findIndex((entry) => entry.id === item.id);
-                    const name = deviceName(device);
-                    const move = (offset: number) => {
-                        const next = [...layout];
-                        const current = next.findIndex((entry) => entry.id === item.id);
-                        const target = next.findIndex((entry) => entry.id === cardLayout[index + offset].id);
-                        [next[current], next[target]] = [next[target], next[current]];
-                        saveLayout(next);
-                    };
-                    return <div className="settings-row" key={item.id}>
-                        <label><input type="checkbox" checked={item.visible} onChange={(event) => saveLayout(layout.map((entry) =>
-                            entry.id === item.id ? { ...entry, visible: event.target.checked } : entry))} /> {name}</label>
-                        {!pinnedIds.includes(item.id) && <div className="buttons">
-                            <button className="button is-small" disabled={index === 0} aria-label={`Выше: ${name}`} onClick={() => move(-1)}>↑</button>
-                            <button className="button is-small" disabled={index === cardLayout.length - 1} aria-label={`Ниже: ${name}`} onClick={() => move(1)}>↓</button>
-                        </div>}
-                    </div>;
-                })}
-                {settingsError && <p role="alert">{settingsError}</p>}
-            </details>
-            <div className="device-grid">
-                {visibleDevices.filter((device) => !pinnedIds.includes(device.id)).map((device) => <section className="device-card" key={device.id}>
-                    {device.id === hallLightGroupId ? <HallLight devices={hallLights} /> :
-                        <DeviceCard device={device} room={home.rooms.find((room) => room.id === device.room)?.name} />}
-                </section>)}
-            </div>
-            {updated && visibleDevices.length === 0 && <p>На главном экране нет устройств. Проверьте настройки видимости.</p>}
-            {activeScenarios.length > 0 && <section className="scenarios">
-                <h2>Сценарии</h2>
-                <div className="buttons">{activeScenarios.map((scenario) => <button key={scenario.id} className="button" disabled={busy}
-                    onClick={() => void execute(() => runScenario(scenario.id))}>{scenario.name}</button>)}</div>
+            {settingsError && <p role="alert">{settingsError}</p>}
+            {activeTab === 'readings' && <div id="readings-panel" role="tabpanel">
+                <ReadingsPanel home={home} visibility={preferences.readingVisibility} order={preferences.readingOrder} weights={preferences.readingWeights}
+                    onVisibility={(readingVisibility) => save({ ...preferences, readingVisibility })}
+                    onLayout={(readingOrder, readingWeights) => save({ ...preferences, readingOrder, readingWeights })}
+                    onWeight={(id, weight) => save({ ...preferences, readingWeights: { ...preferences.readingWeights, [id]: weight } })} />
+            </div>}
+            {activeTab === 'devices' && <section id="devices-panel" role="tabpanel" className="dashboard-section" aria-label="Устройства">
+                <div className="section-tools">
+                    <span className="muted">Показано {visible.length} из {entries.length}</span>
+                </div>
+                <details className="layout-settings">
+                    <summary>Настроить устройства</summary>
+                    <p className="muted">Новые устройства появляются автоматически. Датчики настраиваются отдельно.</p>
+                    {entries.map((entry, index) => {
+                        const checked = preferences.visibility[entry.id] ?? defaultVisible();
+                        const move = (offset: number) => {
+                            const order = entries.map((entry) => entry.id);
+                            [order[index], order[index + offset]] = [order[index + offset], order[index]];
+                            save({ ...preferences, order, weights: Object.fromEntries(order.map((id, position) => [id, (position + 1) * 10])) });
+                        };
+                        return <div className="settings-row" key={entry.id}>
+                            <label><input type="checkbox" checked={checked} onChange={(event) => save({ ...preferences,
+                                visibility: { ...preferences.visibility, [entry.id]: event.target.checked } })} /> {entry.name}
+                                {entry.device && <span className="muted"> · {roomName(entry.device.room)}</span>}
+                                {entry.device && deviceAliases(entry.device).length > 0 &&
+                                    <span className="muted"> · также: {deviceAliases(entry.device).join(', ')}</span>}
+                            </label>
+                            <div className="buttons">
+                                <label className="weight-control">Вес<input className="input" type="number" step="1"
+                                    value={preferences.weights[entry.id] ?? (index + 1) * 10}
+                                    onChange={(event) => Number.isFinite(event.target.valueAsNumber) && save({ ...preferences,
+                                        weights: { ...preferences.weights, [entry.id]: event.target.valueAsNumber } })} /></label>
+                                <button className="button is-small" disabled={index === 0} aria-label={`Выше: ${entry.name}`} onClick={() => move(-1)}>↑</button>
+                                <button className="button is-small" disabled={index === entries.length - 1} aria-label={`Ниже: ${entry.name}`} onClick={() => move(1)}>↓</button>
+                                {entry.group && <button className="button is-small" onClick={() => save({ ...preferences,
+                                    groups: preferences.groups.filter((group) => group.id !== entry.id),
+                                    ungrouped: [...preferences.ungrouped, entry.id],
+                                })}>Разъединить</button>}
+                            </div>
+                        </div>;
+                    })}
+                    <details className="layout-settings">
+                        <summary>Объединить управление питанием</summary>
+                        <form className="group-form" onSubmit={(event) => {
+                            event.preventDefault();
+                            if (!groupName.trim() || groupMembers.length < 2) return;
+                            save({ ...preferences, groups: [...preferences.groups, { id: `group:${crypto.randomUUID()}`, name: groupName.trim(), deviceIds: groupMembers }] });
+                            setGroupMembers([]); setGroupName('');
+                        }}>
+                            <label>Название группы<input className="input" value={groupName} required maxLength={80} onChange={(event) => setGroupName(event.target.value)} /></label>
+                            {home.devices.filter((device) => capability(device, 'on_off') && !preferences.groups.some((group) => group.deviceIds.includes(device.id)))
+                                .map((device) => <label key={device.id}>
+                                    <input type="checkbox" checked={groupMembers.includes(device.id)} onChange={(event) => setGroupMembers(event.target.checked ? [...groupMembers, device.id] : groupMembers.filter((id) => id !== device.id))} />
+                                    {' '}{deviceName(device)} · {roomName(device.room)}
+                                </label>)}
+                            <button className="button" disabled={!groupName.trim() || groupMembers.length < 2}>Создать группу</button>
+                        </form>
+                    </details>
+                </details>
+                <div className="device-grid">{visible.map((entry) => {
+                    if (entry.group) return <article className="device-card" key={entry.id}><PowerGroup group={entry.group} devices={home.devices} /></article>;
+                    const device = entry.device!;
+                    const media = device.type.startsWith('devices.types.media_device') || !!capability(device, 'range', 'volume') || !!capability(device, 'toggle', 'pause');
+                    return <article className="device-card" key={entry.id}>
+                        {media ? <details className="universal-remote">
+                            <summary>{entry.name}<span className="muted"> · {roomName(device.room)}</span></summary>
+                            <div className="universal-remote__body"><CapabilityControls device={device} /></div>
+                        </details> : <>
+                            <h3>{entry.name}</h3><p className="device-room">{roomName(device.room)}</p>
+                            <CapabilityControls device={device} />
+                        </>}
+                    </article>;
+                })}</div>
+                {!updated && loading && <p className="muted">Загрузка устройств…</p>}
+                {updated && !visible.length && <p className="muted">Нет видимых устройств. Выберите их в настройках.</p>}
             </section>}
-            {inactiveScenarios.length > 0 && <details className="layout-settings"><summary>Неактивные сценарии · {inactiveScenarios.length}</summary>
-                <p className="muted">Отключены в Яндексе. Для возвращения сезонного управления включите нужные сценарии в «Доме с Алисой».</p>
-                <ul>{inactiveScenarios.map((scenario) => <li key={scenario.id}>{scenario.name}</li>)}</ul>
-            </details>}
+            {activeTab === 'scenarios' && <div id="scenarios-panel" role="tabpanel">
+                <ScenariosPanel scenarios={home.scenarios} />
+            </div>}
         </main>
     </CommandContext.Provider>;
 }
-
 export default function YandexSmartHomeApp() {
     const [token, setToken] = useState<string | null>(null);
     const [authError, setAuthError] = useState('');

@@ -1,5 +1,5 @@
 import { sendActions } from '../api';
-import { action, boundedValue, capability } from '../model';
+import { action, boundedValue, capability, capabilityValue } from '../model';
 import type { Device } from '../model';
 import { useCommand } from '../hooks/use-command';
 import CustomInput from './custom-input/custom-input';
@@ -8,8 +8,8 @@ export function PowerControl({ device }: { device: Device }) {
     const { busy, execute } = useCommand();
     const cap = capability(device, 'on_off');
     if (!cap) return null;
-    const powered = cap.state?.value;
-    const known = cap.retrievable !== false && typeof powered === 'boolean';
+    const powered = capabilityValue(cap);
+    const known = typeof powered === 'boolean';
     const send = (value: boolean) => execute(() => sendActions([{ id: device.id, actions: [action('on', value)] }]));
     return <div className="control-group">
         <p className="muted">{known ? (powered ? 'Включено' : 'Выключено') : 'Состояние питания неизвестно'}</p>
@@ -31,20 +31,19 @@ export function RangeControl({ device, instance, label }: { device: Device; inst
     const max = cap.parameters?.range?.max;
     const step = cap.parameters?.range?.precision || 1;
     const send = (value: number, relative = false) => execute(() => sendActions([{ id: device.id,
-        actions: [action(instance, relative ? value : boundedValue(value, min!, max!, step), 'range', relative)] }]));
+        actions: [action(instance, relative ? value : min !== undefined && max !== undefined ? boundedValue(value, min, max, step) : value, 'range', relative)] }]));
     if (cap.parameters?.random_access === false) return <div className="control-group">
         <p>{label}</p><div className="buttons">
             <button className="button" disabled={busy} aria-label={`Убавить: ${label}`} onClick={() => void send(-1, true)}>−</button>
             <button className="button" disabled={busy} aria-label={`Прибавить: ${label}`} onClick={() => void send(1, true)}>+</button>
         </div>
     </div>;
-    if (min === undefined || max === undefined) return null;
     return <div className="control-group">
         <CustomInput label={label} value={current} min={min} max={max} step={step} disabled={busy} onApply={(value) => send(value)} />
-        <div className="buttons">
-            <button className="button" disabled={busy || current === undefined || current <= min} aria-label={`Убавить: ${label}`} onClick={() => void send(current! - step)}>−</button>
-            <button className="button" disabled={busy || current === undefined || current >= max} aria-label={`Прибавить: ${label}`} onClick={() => void send(current! + step)}>+</button>
-        </div>
+        {current !== undefined && <div className="buttons">
+            <button className="button" disabled={busy || (min !== undefined && current <= min)} aria-label={`Убавить: ${label}`} onClick={() => void send(current! - step)}>−</button>
+            <button className="button" disabled={busy || (max !== undefined && current >= max)} aria-label={`Прибавить: ${label}`} onClick={() => void send(current! + step)}>+</button>
+        </div>}
     </div>;
 }
 
@@ -62,7 +61,7 @@ export function ModeControl({ device, instance, label }: { device: Device; insta
     if (!modes?.length) return null;
     const current = typeof cap?.state?.value === 'string' && modes.some((mode) => mode.value === cap.state?.value) ? cap.state.value : '';
     return <label className="control-group">{label}
-        <select className="input" disabled={busy} value={current} onChange={(event) => {
+        <select className="input" aria-label={label} disabled={busy} value={current} onChange={(event) => {
             const value = event.target.value;
             void execute(() => sendActions([{ id: device.id, actions: [action(instance, value, 'mode')] }]));
         }}>

@@ -4,6 +4,7 @@
     background: #f4f6f8;
     color: #283442;
 }
+html, body { max-width: 100%; overflow-x: hidden; }
 body { margin: 0; }
 button, input, select { font: inherit; }
 .mainApp { max-width: 1320px; margin: 0 auto; padding: 28px; color: #283442; }
@@ -20,14 +21,24 @@ button, input, select { font: inherit; }
 .layout-settings { margin: 16px 0 24px; }
 .layout-settings summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .settings-row { max-width: 700px; padding: 8px 0; border-bottom: 1px solid #dfe5eb; }
+.weight-control { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.weight-control .input { width: 76px; min-width: 0; }
 .control-group { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
-.color-picker { display: flex; flex-direction: column; gap: 8px; }
+.preset-editor, .preset-editor form, .preset-editor label { min-width: 0; max-width: 100%; }
+.preset-editor form { display: grid; gap: 8px; }
+.preset-editor .input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.color-preset-form { display: grid; grid-template-columns: minmax(140px, .8fr) minmax(180px, 1fr); gap: 8px; align-items: stretch; }
+.color-picker { display: block; min-width: 0; }
 .color-picker__control { position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; border: 1px solid #cbd2d9; border-radius: 8px; background: #fff; overflow: hidden; }
 .color-picker__preview { display: block; flex: 0 0 48px; height: 28px; border: 1px solid #bac3cd; border-radius: 5px; }
 .color-picker__control input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .color-picker__control:focus-within { outline: 3px solid #487ea8; outline-offset: 3px; }
 .color-picker__control:has(input:disabled) { opacity: .5; }
+.color-preset-name, .color-preset-name .input { min-width: 0; height: 100%; }
+.color-preset-actions { grid-column: 1 / -1; }
+.color-preset-actions .button { flex: 1 1 160px; }
 .favorite-colors { display: grid; gap: 8px; }
+.saved-color { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .favorite-color { justify-content: flex-start; gap: 10px; text-align: left; }
 .color-swatch { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #bac3cd; flex-shrink: 0; }
 .meter-reading { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 0; }
@@ -39,9 +50,33 @@ button, input, select { font: inherit; }
 @media (max-width: 600px) {
     .mainApp { padding: 16px; }
     .device-card { padding: 18px; }
+    .color-preset-form { grid-template-columns: 1fr; }
+    .color-preset-actions { grid-column: auto; }
 }
 
-.water-details { margin: 16px 0; }
-.water-details summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
-.water-details .card-layout__root { max-width: 460px; padding: 16px 0; }
-.mainApp .water-details summary:focus-visible { outline: 3px solid #487ea8; outline-offset: 3px; }
+.dashboard-section { margin: 20px 0 28px; }
+.mainApp h3 { font-size: 20px; font-weight: 650; margin-bottom: 8px; }
+.capability-controls, .color-controls { display: flex; flex-direction: column; gap: 14px; }
+.device-card .device-room { margin: 0 0 16px; }
+.readings-panel { margin: 20px 0; }
+.section-tools { display: flex; justify-content: space-between; align-items: center; min-height: 34px; }
+.readings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; margin: 16px 0; }
+.reading-card { padding: 16px; border: 1px solid #dfe5eb; border-radius: 12px; background: white; display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.reading-card strong { font-size: 23px; }
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin: 16px 0; }
+.scenario-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: white; border: 1px solid #dfe5eb; border-radius: 12px; padding: 16px; }
+.group-form { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 600px; min-width: 0; }
+.group-form label, .group-form .input { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.unsupported-controls { margin-top: 12px; }
+.unsupported-controls summary { cursor: pointer; overflow-wrap: anywhere; }
+.unsupported-controls pre { font-size: 12px; max-height: 220px; white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; }
+.universal-remote > summary { font-size: 20px; font-weight: 650; cursor: pointer; }
+.universal-remote > summary .muted { display: block; font-weight: 400; }
+.universal-remote__body { margin-top: 18px; padding: 22px; border-radius: 28px; background: #252e3b; color: #f4f6fa; }
+.universal-remote__body .muted { color: #bcc8d8; }
+.universal-remote__body .button { border-radius: 16px; min-height: 48px; }
+.universal-remote__body .control-group > .buttons .button { flex: 1; font-size: 22px; }
+.universal-remote__body label, .universal-remote__body .control-group > p { color: inherit; }
+
+.power-group { display: flex; flex-direction: column; gap: 12px; }
+.device-room { color: #626e7a; font-size: 13px; }

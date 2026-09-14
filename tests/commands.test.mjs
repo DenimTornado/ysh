@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApiClient } from '../src/api-client.ts';
-import { action, boundedValue, capability, updatedAt } from '../src/model.ts';
+import { action, boundedValue, capability, capabilityValue, updatedAt } from '../src/model.ts';
 import { rgbToHsv, hsvToRgb } from '../src/colors.ts';
 
 function mockClient(data, status = 200) {
@@ -25,6 +25,11 @@ test('missing state does not become an invented power value', () => {
     const device = { capabilities: [{ type: 'devices.capabilities.on_off', parameters: { split: true }, state: null }] };
     assert.equal(capability(device, 'on_off').state, null);
     assert.equal(capability(device, 'range', 'volume'), undefined);
+});
+
+test('a value with an explicit zero update timestamp is stale', () => {
+    assert.equal(capabilityValue({ retrievable: true, last_updated: 0, state: { value: true } }), undefined);
+    assert.equal(capabilityValue({ retrievable: true, last_updated: 10, state: { value: false } }), false);
 });
 
 test('numeric limits, step precision, and invalid input', () => {

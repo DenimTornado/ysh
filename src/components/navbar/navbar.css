@@ -1,6 +1,11 @@
-.home-header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid #dfe5eb; }
-.home-header > .climate-readings { flex: 1 1 480px; }
-.climate-readings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; }
-.climate-readings > div { display: flex; flex-direction: column; gap: 4px; }
-.climate-readings strong { font-size: 24px; }
-.climate-readings span { font-size: 14px; color: #626e7a; }
+.home-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding-bottom: 12px; border-bottom: 1px solid #dfe5eb; }
+.home-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #e9edf1; }
+.home-tab { display: flex; align-items: baseline; gap: 7px; min-height: 38px; padding: 7px 12px; border: 0; border-radius: 9px; background: transparent; color: #626e7a; cursor: pointer; }
+.home-tab strong { color: inherit; font-size: 13px; }
+.home-tab[aria-selected="true"] { background: #fff; color: #283442; box-shadow: 0 1px 4px #1b293816; }
+@media (max-width: 520px) {
+    .home-tabs { width: 100%; overflow-x: auto; }
+    .home-tab { flex: 1; justify-content: center; padding-inline: 8px; }
+    .home-header > .buttons { width: 100%; }
+    .home-header > .buttons .button { flex: 1; }
+}

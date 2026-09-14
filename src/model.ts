@@ -6,6 +6,7 @@ export interface Capability {
     reportable?: boolean;
     parameters?: {
         instance?: string;
+        unit?: string;
         split?: boolean;
         random_access?: boolean;
         range?: { min?: number; max?: number; precision?: number };
@@ -31,6 +32,8 @@ export interface Device {
     type: string;
     aliases?: string[] | null;
     room?: string;
+    external_id?: string;
+    household_id?: string;
     capabilities?: Capability[];
     properties?: Property[];
 }
@@ -62,6 +65,11 @@ export function capability(device: Device, type: string, instance?: string) {
         (!instance || item.parameters?.instance === instance || item.state?.instance === instance));
 }
 
+export function capabilityValue(cap?: Capability) {
+    if (!cap || cap.retrievable === false || cap.last_updated === 0) return undefined;
+    return cap.state?.value;
+}
+
 export function action(instance: string, value: ActionValue, type = 'on_off', relative?: boolean): Action {
     return { type: `devices.capabilities.${type}`, state: { instance, value, ...(relative === undefined ? {} : { relative }) } };
 }
@@ -81,5 +89,25 @@ export function updatedAt(timestamp?: number) {
 }
 
 export function deviceName(device: { name: string; aliases?: string[] | null }) {
-    return device.aliases?.[0] || device.name;
+    const genericNames = new Set(['Переключатель', 'Устройство', 'Розетка']);
+    return genericNames.has(device.name) && device.aliases?.[0] ? device.aliases[0] : device.name;
+}
+
+export function deviceAliases(device: { name: string; aliases?: string[] | null }) {
+    const visibleName = deviceName(device);
+    return [device.name, ...(device.aliases ?? [])].filter((name, index, names) =>
+        name !== visibleName && names.indexOf(name) === index);
+}
+
+const deviceTypeNames: Record<string, string> = {
+    'devices.types.socket': 'Розетка',
+    'devices.types.light': 'Свет',
+    'devices.types.light.strip': 'Световая лента',
+    'devices.types.switch': 'Выключатель',
+    'devices.types.media_device.tv': 'Телевизор',
+    'devices.types.media_device.tv_box': 'Приставка',
+};
+
+export function deviceTypeName(device: Device) {
+    return deviceTypeNames[device.type] || device.type.replace('devices.types.', '');
 }

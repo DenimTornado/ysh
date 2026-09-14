@@ -84,12 +84,6 @@ export const hsvToRgb = (h: number, s: number, v: number) => {
 };
 
 
-export const FAVORITE_COLORS = [
-    { name: 'iOS 8 Water', hex: '#2D89B8' },
-    { name: 'Diablo IV Lilith', hex: '#8A0012' },
-    { name: 'Cyberpunk 2077', hex: '#D8C600' },
-];
-
 export const rgbIntToHex = (value: number) => {
     const r = (value >> 16) & 255;
     const g = (value >> 8) & 255;
@@ -97,4 +91,3 @@ export const rgbIntToHex = (value: number) => {
 
     return rgbToHex(r, g, b);
 };
-
