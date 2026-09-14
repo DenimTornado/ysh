@@ -1,33 +1,47 @@
-.mainApp {
-    color: #79848f;
-    margin: 20px;
-
-    .device-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-
-    .device-grid > div {
-        width: 370px;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-
-    .buttons {
-        display: flex;
-        margin-top: 10px;
-        gap: 10px;
-    }
-
-    @media screen and (max-width: 430px) {
-
-        .device-grid > div {
-            width: 100%
-        }
-    }
+:root {
+    font-family: system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+    background: #f4f6f8;
+    color: #283442;
+}
+body { margin: 0; }
+button, input, select { font: inherit; }
+.mainApp { max-width: 1320px; margin: 0 auto; padding: 28px; color: #283442; }
+.mainApp h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 700; }
+.mainApp h2 { font-size: 22px; font-weight: 650; }
+.mainApp .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.mainApp .buttons .button { margin: 0; }
+.mainApp .button { min-height: 42px; white-space: normal; height: auto; }
+.mainApp .input { background: white; color: #283442; border-color: #cbd2d9; }
+.mainApp .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 20px; align-items: start; }
+.device-card { padding: 22px; border: 1px solid #dfe5eb; border-radius: 18px; background: #fff; min-width: 0; }
+.muted, .mainApp small { color: #626e7a; font-size: 13px; }
+.settings-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.layout-settings { margin: 16px 0 24px; }
+.layout-settings summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.settings-row { max-width: 700px; padding: 8px 0; border-bottom: 1px solid #dfe5eb; }
+.control-group { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.color-picker { display: flex; flex-direction: column; gap: 8px; }
+.color-picker__control { position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; border: 1px solid #cbd2d9; border-radius: 8px; background: #fff; overflow: hidden; }
+.color-picker__preview { display: block; flex: 0 0 48px; height: 28px; border: 1px solid #bac3cd; border-radius: 5px; }
+.color-picker__control input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.color-picker__control:focus-within { outline: 3px solid #487ea8; outline-offset: 3px; }
+.color-picker__control:has(input:disabled) { opacity: .5; }
+.favorite-colors { display: grid; gap: 8px; }
+.favorite-color { justify-content: flex-start; gap: 10px; text-align: left; }
+.color-swatch { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #bac3cd; flex-shrink: 0; }
+.meter-reading { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 0; }
+.meter-reading small { grid-column: 1 / -1; }
+.scenarios { margin-top: 28px; }
+.scenarios h2 { margin-bottom: 12px; }
+.login { max-width: 600px; padding-top: 15vh; display: grid; gap: 24px; }
+.mainApp button:focus-visible, .mainApp summary:focus-visible, .mainApp input:focus-visible, .mainApp select:focus-visible { outline: 3px solid #487ea8; outline-offset: 3px; }
+@media (max-width: 600px) {
+    .mainApp { padding: 16px; }
+    .device-card { padding: 18px; }
 }
 
-
+.water-details { margin: 16px 0; }
+.water-details summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.water-details .card-layout__root { max-width: 460px; padding: 16px 0; }
+.mainApp .water-details summary:focus-visible { outline: 3px solid #487ea8; outline-offset: 3px; }

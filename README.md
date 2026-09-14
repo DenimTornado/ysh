@@ -1,69 +1,52 @@
-# React + TypeScript + Vite
+# Домашний пульт
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite: свет, кондиционер, ИК-приставка, климатические показания, счётчики воды и сценарии Яндекса.
 
-Currently, two official plugins are available:
+## Запуск
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Нужен Node.js 22.6+ (для тестов с TypeScript без дополнительных зависимостей).
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Заполните `.env`: адрес существующего серверного прокси и идентификатор OAuth-приложения Яндекса. В настройках OAuth должен быть разрешён адрес приложения, например `http://localhost:5173/`. Требуются права `iot:view iot:control`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run build
+npm run lint
+npm test
 ```
+
+Vite сам обрабатывает CSS через `postcss.config.cjs`. Сборка не перезаписывает исходные стили.
+
+## Серверный контракт
+
+Сервер находится вне этого репозитория. Клиент отправляет POST на `VITE_API_URL`:
+
+- `{ token, endpoint: "user-info" }` — ответ с массивами `devices`, `rooms`, `scenarios`.
+- `{ token, endpoint: "device-action", payload: { devices: [{ id, actions: [{ type, state }] }] } }` — команды устройств. Сервер должен передавать `state.relative` и все действия пакета без изменений.
+- `{ token, endpoint: "run-scenario", payload: { scenario_id } }` — запуск существующего сценария.
+
+Ответы должны быть JSON. Клиент обрабатывает HTTP-ошибки, `error_code`, `error_message`, `status: "error"`, а также ошибки отдельных устройств и `action_result`. Серверу нужно сохранять эти сведения в ответе. Частичный отказ пакета отображается как ошибка; уже выполненные команды не откатываются и не повторяются автоматически.
+
+После команды клиент перечитывает дом и ещё раз обновляет данные через 1,5 секунды после успешного запроса. Дополнительное обновление происходит при возвращении на вкладку и каждые две минуты на видимой вкладке. Старые запросы отменяются; во время команды управление заблокировано. Полученное состояние не подменяется предположением об успешном выполнении.
+
+## Устройства и ограничения
+
+Начальный порядок и видимость находятся в `src/device-config.ts`. Изменения через «Настроить главный экран» сохраняются в браузере. Розетка и отдельный телевизор не включены в главный экран, увлажнитель по умолчанию скрыт. Неактивные сценарии доступны для просмотра в свёрнутом разделе.
+
+Обе клавиши зала объединены в карточку «Свет в зале»: команды включения и выключения отправляются обеим сразу. Сохранённые настройки отдельных клавиш автоматически объединяются. При разном состоянии клавиш карточка показывает «Включён частично».
+
+
+Пульт приставки расположен под свёрнутым по умолчанию спойлером вверху, рядом с показаниями воды. ИК-приставка не сообщает состояние: питание представлено отдельными командами включения и выключения, громкость — относительными шагами ±1. Принятие команды сервером не подтверждает, что ИК-сигнал дошёл до приставки. Существующий сценарий «Бокс пауза» запускается без изменения его шагов. Прямые служебные команды Quasar не используются.
+
+Кондиционер показывает поддерживаемые режимы, скорость, обдув и подсветку. Диапазоны числовых полей берутся из возможностей устройства. Пресеты ленты «Вечер», «Чтение» и «Тёплый» (2700 K, 95%) включают свет и задают температуру цвета с яркостью; избранные цвета сохранены.
+
+Климатическая панель показывает время обновления каждого измерения. Неизвестное время не считается признаком отключения устройства. Показания воды размещены над карточками устройств в свёрнутом по умолчанию разделе. Они округляются до трёх знаков и копируются текстом; история расхода пока не сохраняется.
+
+## Проверка
+
+`npm test` проверяет формат относительных команд, числовые ограничения, ошибки API, частичный отказ пакета, некорректные данные и преобразование цвета. Тесты подменяют сетевые запросы и не управляют домашними устройствами.

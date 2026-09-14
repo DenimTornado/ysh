@@ -1,45 +1,6 @@
-.navbar {
-    margin-bottom: 20px;
-
-    img {
-        width: 48px;
-        height: 48px;
-        margin-right: 20px;
-    }
-
-    &__brand {
-        @media screen and (max-width: 430px) {
-            gap: 10px;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-    }
-
-
-    &__content {
-        gap: 20px;
-        display: flex;
-        align-items: center;
-
-        @media screen and (max-width: 430px) {
-            gap: 10px;
-            align-items: flex-start;
-            flex-direction: column;
-        }
-    }
-
-    &__logout {
-        @media screen and (max-width: 430px) {
-            display: none;
-        }
-    }
-
-    &__mobile-logout {
-        display: none;
-        @media screen and (max-width: 430px) {
-            display: block;
-        }
-    }
-}
+.home-header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid #dfe5eb; }
+.home-header > .climate-readings { flex: 1 1 480px; }
+.climate-readings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; }
+.climate-readings > div { display: flex; flex-direction: column; gap: 4px; }
+.climate-readings strong { font-size: 24px; }
+.climate-readings span { font-size: 14px; color: #626e7a; }

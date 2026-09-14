@@ -1,16 +1,4 @@
-.custom-input {
-    &__input {
-        display: flex;
-        gap: 10px;
-
-        input {
-            width: 70px;
-        }
-    }
-
-    &__icon {
-        img {
-            width: 50px;
-        }
-    }
-}
+.custom-input { display: flex; flex-direction: column; gap: 8px; }
+.custom-input__input { display: flex; gap: 8px; align-items: center; }
+.custom-input__input input { min-width: 0; flex: 1; }
+.custom-input__input button { flex-shrink: 0; }

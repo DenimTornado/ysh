@@ -1,21 +1,10 @@
-import React from 'react';
-import { createCn } from 'bem-react-classname';
-import './button.css'
+import type { ButtonHTMLAttributes } from 'react';
+import './button.css';
 
-type Props = {
-    onClick: any;
-    icon: any;
-    alt: string
-};
+type Props = ButtonHTMLAttributes<HTMLButtonElement> & { icon: string; alt: string };
 
-const cn = createCn('customButton');
-
-const Button: React.FC<Props> = ({ onClick, icon, alt }) => {
-    return (
-        <button className={ cn() } onClick={ onClick }>
-            <img src={ icon } alt={ alt }/>
-        </button>
-    );
-};
-
-export default Button;
+export default function Button({ icon, alt, ...props }: Props) {
+    return <button type="button" className="customButton" aria-label={alt} title={alt} {...props}>
+        <img src={icon} alt="" />
+    </button>;
+}

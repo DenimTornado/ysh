@@ -1,40 +1,31 @@
-import React from 'react';
-import applyIcon from '../../assets/icons/apply.png';
-import Button from '../button/button';
-import { createCn } from 'bem-react-classname';
-
-import './custom-input.css'
+import { useEffect, useId, useState } from 'react';
+import './custom-input.css';
 
 type Props = {
-    value: any;
-    onChange: any;
-    onClick: any;
+    label: string;
+    value?: number;
+    min: number;
+    max: number;
+    step?: number;
+    disabled?: boolean;
+    onApply: (value: number) => Promise<boolean>;
 };
 
-const cn = createCn('custom-input');
-
-const CustomInput: React.FC<Props> = ({ value, onChange, onClick }) => {
-    return (
-        <div className={cn()}>
-            <div>
-                Установить значение:
-            </div>
-            <div className={cn('input')}>
-                <div className={cn('field')}>
-                    <input
-                        className={ 'input mb-2 is-medium' }
-                        type="number"
-                        value={ value }
-                        onChange={ onChange }
-                        style={ { width: '100px' } }
-                    />
-                </div>
-                <div className={cn('icon')}>
-                    <Button alt={ 'Mute' } onClick={ onClick } icon={ applyIcon }/>
-                </div>
-            </div>
+export default function CustomInput({ label, value, min, max, step = 1, disabled, onApply }: Props) {
+    const id = useId();
+    const [draft, setDraft] = useState(value === undefined ? '' : String(value));
+    useEffect(() => { setDraft(value === undefined ? '' : String(value)); }, [value]);
+    return <form className="custom-input" onSubmit={async (event) => {
+        event.preventDefault();
+        if (!draft.trim() || !Number.isFinite(Number(draft))) return;
+        await onApply(Number(draft));
+    }}>
+        <label htmlFor={id}>{label}</label>
+        <div className="custom-input__input">
+            <input id={id} className="input" type="number" value={draft} min={min} max={max} step={step}
+                required disabled={disabled} placeholder={value === undefined ? '—' : String(value)}
+                onChange={(event) => setDraft(event.target.value)} />
+            <button className="button" disabled={disabled || !draft.trim()} type="submit">Применить</button>
         </div>
-    );
-};
-
-export default CustomInput;
+    </form>;
+}

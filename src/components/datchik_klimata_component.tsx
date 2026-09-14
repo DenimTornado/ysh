@@ -1,53 +1,27 @@
-import React from 'react';
+import type { DeviceProps } from '../model';
+import { updatedAt } from '../model';
 import { CardLayout } from './card-layout/card-layout';
 
-type Property = {
-    type: string;
-    parameters: { instance: string };
-    state?: {
-        instance: string;
-        value: any;
-    };
+const properties: Record<string, { label: string; unit: string; digits: number }> = {
+    temperature: { label: 'Температура', unit: '°C', digits: 1 },
+    humidity: { label: 'Влажность', unit: '%', digits: 1 },
+    pressure: { label: 'Давление', unit: 'мм рт. ст.', digits: 0 },
+    battery_level: { label: 'Батарея', unit: '%', digits: 0 },
 };
 
-type Device = {
-    id: string;
-    name: string;
-    properties?: Property[];
-};
-
-type Props = {
-    device: Device;
-    room?: string;
-};
-
-const dataMap = {
-    battery_level: 'Заряд',
-    temperature: 'Температура',
-    humidity: 'Влажность',
-    pressure: 'Давление'
+export function ClimateReadings({ device }: DeviceProps) {
+    return <div className="climate-readings">{device.properties?.map((property) => {
+        const description = properties[property.parameters.instance];
+        const value = property.state?.value;
+        if (!description || typeof value !== 'number' || !Number.isFinite(value)) return null;
+        return <div key={property.parameters.instance}>
+            <span>{description.label}</span>
+            <strong>{value.toLocaleString('ru-RU', { maximumFractionDigits: description.digits })} {description.unit}</strong>
+            <small>{updatedAt(property.last_updated)}</small>
+        </div>;
+    })}</div>;
 }
 
-const DatchikKlimataComponent: React.FC<Props> = ({ device, room }) => {
-    return (
-        <CardLayout
-            device={ device }
-            room={ room }
-        >
-            <CardLayout.Actions>
-                <h4>Показания:</h4>
-                <ul>
-                    { device.properties.map((prop, index) => (
-                        prop.state?.value !== undefined && (
-                            <li key={ index }>
-                                { dataMap[prop.parameters.instance] }: { prop.state.value.toFixed(2) }
-                            </li>
-                        )
-                    )) }
-                </ul>
-            </CardLayout.Actions>
-        </CardLayout>
-    );
-};
-
-export default DatchikKlimataComponent;
+export default function DatchikKlimataComponent({ device, room }: DeviceProps) {
+    return <CardLayout device={device} room={room}><ClimateReadings device={device} /></CardLayout>;
+}

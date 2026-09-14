@@ -1,269 +1,156 @@
-// YandexSmartHomeApp.tsx
-import React, { useEffect, useState } from 'react';
-import TelevizorComponent from './components/televizor_component';
-import TvPristavkaComponent from './components/tv_pristavka_component';
-import TaniksComponent from './components/taniks_component';
-import KonditsionerComponent from './components/konditsioner_component';
-import DatchikKlimataComponent from './components/datchik_klimata_component';
-import { createCn } from 'bem-react-classname';
-import { getUserInfo, runScenario } from './api';
+import { useEffect, useState } from 'react';
 import 'bulma/css/bulma.min.css';
-
 import './YandexSmartHomeApp.css';
-import LampaComponent from './components/lampa_component';
-import LentaComponent from './components/lenta_component';
-import { CardLayout } from './components/card-layout/card-layout';
-import Button from './components/button/button';
-import startIcon from './assets/icons/start.png';
+import { runScenario, TOKEN_KEY } from './api';
+import type { Device } from './model';
+import { deviceName } from './model';
+import { climateSensorId, deviceConfig, hallLightGroupId, hallLightIds, mergeLayout, waterGroupId, waterMeterIds } from './device-config';
+import type { Layout } from './device-config';
+import HallLight from './components/hall-light';
+import { CommandContext } from './hooks/use-command';
+import { useHome } from './hooks/use-home';
 import { Navbar } from './components/navbar/navbar';
+import LentaComponent from './components/lenta_component';
+import KonditsionerComponent from './components/konditsioner_component';
+import TvPristavkaComponent from './components/tv_pristavka_component';
+import LampaComponent from './components/lampa_component';
+import WaterMeters from './components/water-meters';
+import { CardLayout } from './components/card-layout/card-layout';
+import { ModeControl, PowerControl } from './components/device-controls';
 
-const CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID;
-const REDIRECT_URI = window.location.href;
-const SCOPE = 'iot:view iot:control';
+const SETTINGS_KEY = 'yandex_smart_home_layout';
+function readLayout(): Layout {
+    try {
+        const parsed: unknown = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+        if (Array.isArray(parsed) && parsed.every((item) => typeof item?.id === 'string' && typeof item?.visible === 'boolean')) {
+            return mergeLayout(parsed as Layout);
+        }
+    } catch { /* Повреждённые или недоступные настройки не должны блокировать пульт. */ }
+    return deviceConfig;
+}
 
-const devicesMap = {
-    'datchikKlimata': { id: '0f3ed5ec-9765-48dc-a2db-96c40de94455', enabled: false, weight: 1 },
-    'tvPristavka': { id: '2a02257c-86a5-4f4a-8772-2c3de32e4e11', enabled: true, weight: 4 },
-    'lampa': { id: '5d97750c-b5b2-432e-b27c-921d9677c5ae', enabled: false, weight: 6 },
-    'lenta': { id: '8ccb68e1-4ddb-470a-9ccd-7d91685a4946', enabled: true, weight: 1 },
-    'pravyiVyklyuchatel': { id: '7679e9ac-eb79-4d87-9ac5-ec5e56b5e778', enabled: false, weight: 0 },
-    'levyiVyklyuchatel': { id: '8166152c-f343-4796-9e77-f8b937598939', enabled: false, weight: 0 },
-    'khab': { id: 'ac7a7525-5a0f-411b-a1ad-0f07b17b88d4', enabled: false, weight: 0 },
-    'televizor': { id: 'b363271e-4ff4-40fc-8dfb-32f9fecf572f', enabled: false, weight: 2 },
-    'konditsioner': { id: 'd1e02587-9d72-4b11-9518-c69799732a72', enabled: true, weight: 2 },
-    'taniks': { id: 'd679f0a0-556d-4187-82bb-96f06707c276', enabled: false, weight: 4 },
-    'stantsiyaMini3': { id: 'ff9370f7-daca-4951-b477-b45ab10aa8b5', enabled: false, weight: 0 },
-    'pereklyuchatel': { id: 'ba0deb1c-aa2b-4adc-8d58-4103917f8240', enabled: true, weight: 3 },
-    'hvs': { id: '2408c45d-0099-45e0-9206-9a2f99aa9968', enabled: false, weight: 10 },
-    'gvs': { id: 'd36c540a-fe8b-4fba-a9c4-2c8543a56057', enabled: false, weight: 10 }
-};
+function DeviceCard({ device, room }: { device: Device; room?: string }) {
+    if (device.type === 'devices.types.light.strip') return <LentaComponent device={device} room={room} />;
+    if (device.type === 'devices.types.thermostat.ac') return <KonditsionerComponent device={device} room={room} />;
+    if (device.type === 'devices.types.media_device.tv_box') return <TvPristavkaComponent device={device} room={room} />;
+    if (device.type === 'devices.types.humidifier') return <CardLayout device={device} room={room}>
+        <p className="muted">Сезонное устройство. Включайте после подключения.</p>
+        <PowerControl device={device} /><ModeControl device={device} instance="fan_speed" label="Интенсивность" />
+    </CardLayout>;
+    return <LampaComponent device={device} room={room} />;
+}
 
-const getRoomName = (rooms: Room[], roomId?: string): string => {
-    if (!roomId) {
-        return '';
-    }
-    const room = rooms.find((r) => r.id === roomId);
-    return room ? room.name : '';
-};
-
-type Property = {
-    type: string;
-    parameters: { instance: string };
-    state?: {
-        instance: string;
-        value: any;
+function HomeDashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+    const { home, busy, loading, error, updated, refresh, execute } = useHome(token);
+    const [savedLayout, setLayout] = useState(readLayout);
+    const layout = mergeLayout(savedLayout);
+    const [settingsError, setSettingsError] = useState('');
+    const saveLayout = (next: Layout) => {
+        setLayout(next);
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); setSettingsError(''); }
+        catch { setSettingsError('Настройки изменены только для этой вкладки: сохранение недоступно.'); }
     };
-};
-
-type Device = {
-    id: string;
-    name: string;
-    room?: string;
-    properties?: Property[];
-};
-
-type Room = {
-    id: string;
-    name: string;
-};
-
-type Scenario = {
-    id: string;
-    name: string;
-};
-
-const cn = createCn('mainApp');
+    const hallLights = home.devices.filter((device) => hallLightIds.includes(device.id));
+    const waterDevices = home.devices.filter((device) => waterMeterIds.includes(device.id));
+    const displayDevices: Device[] = [
+        ...home.devices.filter((device) => !hallLightIds.includes(device.id) && !waterMeterIds.includes(device.id)),
+        ...(waterDevices.length ? [{ id: waterGroupId, name: 'Показания воды', type: 'local.water_group' }] : []),
+        ...(hallLights.length ? [{ id: hallLightGroupId, name: 'Свет в зале', type: 'local.light_group' }] : []),
+    ];
+    const visibleDevices = layout.filter((item) => item.visible).flatMap((item) => {
+        const device = displayDevices.find((device) => device.id === item.id);
+        return device ? [device] : [];
+    });
+    const remotes = visibleDevices.filter((device) => device.type === 'devices.types.media_device.tv_box');
+    const pinnedIds = [waterGroupId, ...displayDevices.filter((device) => device.type === 'devices.types.media_device.tv_box').map((device) => device.id)];
+    const meters = visibleDevices.some((device) => device.id === waterGroupId) ? waterDevices : [];
+    const availableLayout = layout.filter((item) => displayDevices.some((device) => device.id === item.id));
+    const cardLayout = availableLayout.filter((item) => !pinnedIds.includes(item.id));
+    const settingsLayout = [...pinnedIds.flatMap((id) => availableLayout.filter((item) => item.id === id)), ...cardLayout];
+    const activeScenarios = home.scenarios.filter((scenario) => scenario.is_active !== false);
+    const inactiveScenarios = home.scenarios.filter((scenario) => scenario.is_active === false);
+    return <CommandContext.Provider value={{ busy, execute }}>
+        <main className="mainApp">
+            <Navbar device={home.devices.find((device) => device.id === climateSensorId)} onLogout={onLogout}
+                onRefresh={() => void refresh()} loading={loading} busy={busy} />
+            {error && <p className="notification is-danger is-light" role="alert">{error}</p>}
+            {meters.length > 0 && <details className="water-details">
+                <summary>Показания воды</summary>
+                <WaterMeters devices={meters} />
+            </details>}
+            {remotes.map((device) => <TvPristavkaComponent key={device.id} device={device} />)}
+            <details className="layout-settings">
+                <summary>Настроить главный экран</summary>
+                <p className="muted">Видимость и порядок сохраняются в этом браузере. Увлажнитель можно вернуть на зиму.</p>
+                {settingsLayout.map((item) => {
+                    const device = displayDevices.find((device) => device.id === item.id);
+                    if (!device) return null;
+                    const index = cardLayout.findIndex((entry) => entry.id === item.id);
+                    const name = deviceName(device);
+                    const move = (offset: number) => {
+                        const next = [...layout];
+                        const current = next.findIndex((entry) => entry.id === item.id);
+                        const target = next.findIndex((entry) => entry.id === cardLayout[index + offset].id);
+                        [next[current], next[target]] = [next[target], next[current]];
+                        saveLayout(next);
+                    };
+                    return <div className="settings-row" key={item.id}>
+                        <label><input type="checkbox" checked={item.visible} onChange={(event) => saveLayout(layout.map((entry) =>
+                            entry.id === item.id ? { ...entry, visible: event.target.checked } : entry))} /> {name}</label>
+                        {!pinnedIds.includes(item.id) && <div className="buttons">
+                            <button className="button is-small" disabled={index === 0} aria-label={`Выше: ${name}`} onClick={() => move(-1)}>↑</button>
+                            <button className="button is-small" disabled={index === cardLayout.length - 1} aria-label={`Ниже: ${name}`} onClick={() => move(1)}>↓</button>
+                        </div>}
+                    </div>;
+                })}
+                {settingsError && <p role="alert">{settingsError}</p>}
+            </details>
+            <div className="device-grid">
+                {visibleDevices.filter((device) => !pinnedIds.includes(device.id)).map((device) => <section className="device-card" key={device.id}>
+                    {device.id === hallLightGroupId ? <HallLight devices={hallLights} /> :
+                        <DeviceCard device={device} room={home.rooms.find((room) => room.id === device.room)?.name} />}
+                </section>)}
+            </div>
+            {updated && visibleDevices.length === 0 && <p>На главном экране нет устройств. Проверьте настройки видимости.</p>}
+            {activeScenarios.length > 0 && <section className="scenarios">
+                <h2>Сценарии</h2>
+                <div className="buttons">{activeScenarios.map((scenario) => <button key={scenario.id} className="button" disabled={busy}
+                    onClick={() => void execute(() => runScenario(scenario.id))}>{scenario.name}</button>)}</div>
+            </section>}
+            {inactiveScenarios.length > 0 && <details className="layout-settings"><summary>Неактивные сценарии · {inactiveScenarios.length}</summary>
+                <p className="muted">Отключены в Яндексе. Для возвращения сезонного управления включите нужные сценарии в «Доме с Алисой».</p>
+                <ul>{inactiveScenarios.map((scenario) => <li key={scenario.id}>{scenario.name}</li>)}</ul>
+            </details>}
+        </main>
+    </CommandContext.Provider>;
+}
 
 export default function YandexSmartHomeApp() {
     const [token, setToken] = useState<string | null>(null);
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [scenarios, setScenarios] = useState<Scenario[]>([]);
-
+    const [authError, setAuthError] = useState('');
     useEffect(() => {
-        const hash = new URLSearchParams(window.location.hash.replace('#', '?'));
-        const accessToken = hash.get('access_token');
-        if (accessToken) {
-            setToken(accessToken);
-            localStorage.setItem('yandex_smart_home_token', accessToken);
-            window.history.replaceState(null, '', window.location.pathname);
-            return;
-        }
-
-        const storedToken = localStorage.getItem('yandex_smart_home_token');
-        if (storedToken) {
-            setToken(storedToken);
-        }
+        try {
+            const hash = new URLSearchParams(window.location.hash.slice(1));
+            const received = hash.get('access_token');
+            if (received) {
+                localStorage.setItem(TOKEN_KEY, received);
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+            if (hash.has('error')) setAuthError('Яндекс не предоставил доступ. Попробуйте войти ещё раз.');
+            setToken(received || localStorage.getItem(TOKEN_KEY));
+        } catch { setAuthError('Разрешите хранение данных сайта для входа.'); }
     }, []);
-
-    useEffect(() => {
-        if (!token) {
-            return;
-        }
-
-        getUserInfo().then((data) => {
-            if (!data) {
-                return;
-            }
-            if (Array.isArray(data.devices)) {
-                setDevices(data.devices);
-            }
-            if (Array.isArray(data.rooms)) {
-                setRooms(data.rooms);
-            }
-            if (Array.isArray(data.scenarios)) {
-                setScenarios(data.scenarios);
-            }
-        });
-    }, [token]);
-
-    useEffect(() => {
-        let intervalId: ReturnType<typeof setInterval>;
-
-        const fetchData = () => {
-            getUserInfo().then((data) => {
-                if (!data) {
-                    return;
-                }
-                if (Array.isArray(data.devices)) {
-                    setDevices(data.devices);
-                }
-                if (Array.isArray(data.rooms)) {
-                    setRooms(data.rooms);
-                }
-                if (Array.isArray(data.scenarios)) {
-                    setScenarios(data.scenarios);
-                }
-            });
-        };
-
-        // Периодическое обновление (в фоне Chrome будет замедлять)
-        // eslint-disable-next-line prefer-const
-        intervalId = setInterval(fetchData, 600000);
-
-        // Моментальный запрос при возврате фокуса
-        const onVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
-                fetchData();
-            }
-        };
-
-        document.addEventListener("visibilitychange", onVisibilityChange);
-
-        return () => {
-            clearInterval(intervalId);
-            document.removeEventListener("visibilitychange", onVisibilityChange);
-        };
-    }, []);
-
-    if (!token) {
-        const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${ CLIENT_ID }&redirect_uri=${ REDIRECT_URI }&scope=${ encodeURIComponent(
-            SCOPE) }`;
-        return (
-            <div className={ cn() }>
-                <h2>Авторизация в Яндексе</h2>
-                <a href={ authUrl }>Войти через Яндекс</a>
-            </div>
-        );
-    }
-
-    const callScenario = (scenarioId: string) => {
-        runScenario(scenarioId);
-    }
-
-    const visibleDevices = Object.entries(devicesMap)
-    .filter(([_, meta]) => meta.enabled)
-    .sort((a, b) => a[1].weight - b[1].weight)
-    .map(([key, meta]) => devices.find((d) => d.id === meta.id))
-    .filter((d): d is Device => !!d);
-
-    const klimatDataDevice = devices.find((device) => { return device.id === devicesMap.datchikKlimata.id});
-
-    const dataMap = {
-        water_meter: { value: 'Объем', units: 'м3' },
-    }
-
-    return (
-        <div className={ cn() }>
-            {klimatDataDevice &&
-                <Navbar device={klimatDataDevice} />
-            }
-
-            <div className="device-grid">
-                { visibleDevices.map((device) => {
-                    const room = getRoomName(rooms, device.room);
-                    switch (device.id) {
-                        case devicesMap.televizor.id:
-                            return <div key={ device.id }><TelevizorComponent device={ device } room={ room }/></div>;
-                        case devicesMap.tvPristavka.id:
-                            return <div key={ device.id }><TvPristavkaComponent device={ device } room={ room }/></div>;
-                        case devicesMap.taniks.id:
-                            return <div key={ device.id }><TaniksComponent device={ device } room={ room }/></div>;
-                        case devicesMap.konditsioner.id:
-                            return <div key={ device.id }><KonditsionerComponent device={ device } room={ room }/>
-                            </div>;
-                        case devicesMap.datchikKlimata.id:
-                            return <div key={ device.id }><DatchikKlimataComponent device={ device } room={ room }/>
-                            </div>;
-                        case devicesMap.lampa.id:
-                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
-                            </div>;
-                        case devicesMap.lenta.id:
-                            return <div key={ device.id }><LentaComponent device={ device } room={ room }/>
-                            </div>;
-                        case devicesMap.pereklyuchatel.id:
-                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
-                            </div>;
-                        case devicesMap.hvs.id:
-                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
-                                { device.properties && device.properties.map((prop, index) => (
-                                    prop.state?.value !== undefined && (
-                                        <div key={ index }>
-                                            { dataMap[prop.parameters.instance].value }: { prop.state.value.toFixed(
-                                            2) }{ dataMap[prop.parameters.instance].units }
-                                        </div>
-                                    )
-                                )) }
-                            </div>;
-                        case devicesMap.gvs.id:
-                            return <div key={ device.id }><LampaComponent device={ device } room={ room }/>
-                                { device.properties && device.properties.map((prop, index) => (
-                                    prop.state?.value !== undefined && (
-                                        <div key={ index }>
-                                            { dataMap[prop.parameters.instance].value }: { prop.state.value.toFixed(
-                                            2) }{ dataMap[prop.parameters.instance].units }
-                                        </div>
-                                    )
-                                )) }
-                            </div>;
-                        default:
-                            return (
-                                <div className="device-card" key={ device.id }>
-                                    <h3>{ device.name }</h3>
-                                    <p><strong>ID:</strong> { device.id }</p>
-                                    <p><strong>Комната:</strong> { room }</p>
-                                </div>
-                            );
-                    }
-                }) }
-
-                { scenarios.length > 0 ? (
-                    scenarios.map((s) => (
-                        <CardLayout
-                            device={ s }
-                            room={ '' }
-                        >
-                            <CardLayout.Actions>
-                                <div className={'buttons'}>
-                                    <Button alt={ 'Mute' } onClick={ () => {callScenario(s.id)} } icon={ startIcon }/>
-                                </div>
-                            </CardLayout.Actions>
-                        </CardLayout>
-                    ))
-                ) : (
-                    <p>Сценарии не найдены.</p>
-                ) }
-            </div>
-        </div>
-    );
+    if (token) return <HomeDashboard token={token} onLogout={() => {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+    }} />;
+    const clientId = import.meta.env.VITE_YANDEX_CLIENT_ID;
+    const authUrl = new URL('https://oauth.yandex.ru/authorize');
+    authUrl.search = new URLSearchParams({ response_type: 'token', client_id: clientId || '',
+        redirect_uri: window.location.origin + window.location.pathname, scope: 'iot:view iot:control' }).toString();
+    return <main className="mainApp login"><h1>Мой дом</h1><p>Войдите, чтобы управлять светом, климатом и приставкой.</p>
+        {authError && <p role="alert">{authError}</p>}
+        {clientId ? <a className="button is-link" href={authUrl.toString()}>Войти через Яндекс</a> :
+            <p role="alert">Не настроен VITE_YANDEX_CLIENT_ID.</p>}
+    </main>;
 }
